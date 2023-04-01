@@ -9,13 +9,11 @@ ipython = "*"
 pillow = "*"
 matplotlib = "*"
 pytest = "*"
-plyvel = "*"
-bson = "*"
 py-spy = "*"
 alembic = "*"
 psycopg2 = "*"
-databases = {extras = ["postgresql"], version = "*"}
 progressbar2 = "*"
+databases = {extras = ["asyncpg"], version = "*"}
 
 [dev-packages]
 ipdb = "*"

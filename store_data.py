@@ -2,28 +2,26 @@ import asyncio
 import argparse
 from databases import Database
 import sqlalchemy as db
-from sqlalchemy.sql.expression import cast
 from markovimage.image import Image
-from matplotlib.image import imread
 import logging
 import progressbar
 
 
 def create_or_add_ring_to_center(center, ring):
      with engine.begin() as conn:
-         if conn.execute(db.text("SELECT * from pixel where center = :center"), center=center).rowcount == 0:
-             conn.execute(db.text("INSERT INTO pixel values(:center, ARRAY[:ring])"), center=center, ring=ring)
+         if conn.execute(db.text("SELECT * from pixel2 where center = :center AND ring = :ring"), center=center, ring=ring).rowcount == 0:
+             conn.execute(db.text("INSERT INTO pixel2 values(:center, :ring, :count)"), center=center, ring=ring, count=1)
          else:
-             conn.execute(db.text("UPDATE pixel SET ring = array_append(ring, :newring where center = :center AND :newring != all(ring)"), center=center, newring=ring)
+             conn.execute(db.text("UPDATE pixel2 SET count = count + 1 where center = :center AND ring = :ring"), center=center, ring=ring)
 
 async def center_and_ring_async(database, center, ring):
-    row = await database.fetch_one(query="SELECT * from pixel where center = :center", values={"center": center})
+    row = await database.fetch_one(query="SELECT * from pixel2 where center = :center AND ring = :ring", values={"center": center, "ring": ring})
     if row:
         logging.debug(f"Row found for {center}, appending some values")
-        await database.execute(query="UPDATE pixel SET ring = ring || CAST(:newring AS varchar) where center = :center AND :newring != all(ring)", values={"center": center, "newring": ring})
+        await database.execute(query="UPDATE pixel2 SET count = count + 1 where center = :center AND ring = :ring", values={"center": center, "ring": ring})
     else:
         logging.debug(f"No row found for {center}, creating a new one")
-        await database.execute(query="INSERT INTO pixel values(:center, ARRAY[:ring])", values={"center": center, "ring": ring})
+        await database.execute(query="INSERT INTO pixel2 values(:center, :ring, :count)", values={"center": center, "ring": ring, "count": 1})
 
 
 parser = argparse.ArgumentParser()
@@ -31,7 +29,7 @@ parser.add_argument('-f','--file', help='image file to load into the db')
 parser.add_argument('-d','--db', help='Path where leveldb will be created', default="db")
 args = parser.parse_args()
 
-logging.basicConfig(filename='out.log', encoding='utf-8', level=logging.DEBUG)
+logging.basicConfig(filename='out2.log', encoding='utf-8', level=logging.DEBUG)
 
 engine = db.create_engine("postgresql://postgres:password@localhost:5433/postgres")
 database = Database("postgresql://postgres:password@localhost:5433/postgres")

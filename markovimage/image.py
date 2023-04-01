@@ -1,12 +1,20 @@
 from matplotlib.image import imread
+from io import BytesIO
+from PIL.Image import Image as PILImage
 
 class Image():
 
-    def __init__(self,image_path):
-        self.pixels = self.image_parse(image_path)
+    def __init__(self,image_path=None, pil_image: PILImage=None):
+        if image_path:
+            self.pixels = self.image_parse(image_path)
+        elif pil_image:
+            output = BytesIO()
+            pil_image.save(output, format="jpeg")
+            self.pixels = self.image_parse(output)
 
-    def image_parse(self, image_path):
-        return imread(image_path)
+    def image_parse(self, image_path, format=None):
+        _format = format if format else "PNG"
+        return imread(image_path, format=_format)
     
     def height(self):
         return len(self.pixels) -1
